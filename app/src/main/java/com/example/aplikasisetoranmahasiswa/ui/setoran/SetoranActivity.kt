@@ -2,8 +2,6 @@ package com.example.aplikasisetoranmahasiswa.ui.setoran
 
 import android.content.ContentValues
 import android.content.Context
-import android.graphics.Paint
-import android.graphics.pdf.PdfDocument
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
@@ -26,7 +24,6 @@ import com.example.aplikasisetoranmahasiswa.network.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -40,6 +37,10 @@ class SetoranActivity : AppCompatActivity() {
     private lateinit var textViewProgress: TextView
     private lateinit var buttonDownloadLaporan: Button
 
+    // Deklarasikan variabel untuk data user di level kelas
+    private var nimMahasiswa: String? = null
+    private var authToken: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_setoran)
@@ -49,25 +50,67 @@ class SetoranActivity : AppCompatActivity() {
         buttonDownloadLaporan = findViewById(R.id.buttonDownloadLaporan)
 
         val sharedPref = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        val authToken = sharedPref.getString("access_token", null)
-        val nimMahasiswa = sharedPref.getString("user_nim", "NIM Tidak Ada")
-        val namaMahasiswa = sharedPref.getString("user_name", "Nama Tidak Ada")
+        authToken = sharedPref.getString("access_token", null)
+        nimMahasiswa = sharedPref.getString("user_nim", null)
+        // namaMahasiswa tidak perlu lagi untuk fungsi download dari server
 
         setupRecyclerView()
 
         fetchStatusHafalan(authToken)
 
+        // ✅ PERUBAHAN 1: OnClickListener sekarang memanggil fungsi download dari server
         buttonDownloadLaporan.setOnClickListener {
-            if (currentSetoranList.isNotEmpty()) {
-                // SESUDAH
-                downloadLaporan(nimMahasiswa ?: "0000", namaMahasiswa ?: "Mahasiswa")
-            } else {
-                Toast.makeText(this, "Data setoran belum dimuat.", Toast.LENGTH_SHORT).show()
+            downloadPdfFromServer()
+        }
+    }
+
+    // ✅ PERUBAHAN 2: Fungsi baru untuk download PDF dari Server
+    private fun downloadPdfFromServer() {
+        if (authToken == null || nimMahasiswa == null) {
+            Toast.makeText(this, "Sesi tidak valid, silakan login ulang.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        Toast.makeText(this, "📄 Memulai download Kartu Muroja'ah...", Toast.LENGTH_SHORT).show()
+
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.apiService.downloadKartuMurojaah("Bearer $authToken")
+
+                if (response.isSuccessful) {
+                    val responseBody = response.body()
+                    if (responseBody != null) {
+                        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+                        val fileName = "kartu_murojaah_${nimMahasiswa}_${timestamp}.pdf"
+
+                        withContext(Dispatchers.IO) {
+                            savePdfToDownloads(this@SetoranActivity, responseBody.bytes(), fileName)
+                        }
+                    } else {
+                        Toast.makeText(this@SetoranActivity, "Gagal: Respons server kosong.", Toast.LENGTH_LONG).show()
+                    }
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    Log.e("DownloadPDF", "Gagal download PDF: $errorBody")
+                    Toast.makeText(this@SetoranActivity, "Gagal download: Server mengembalikan error.", Toast.LENGTH_LONG).show()
+                }
+
+            } catch (e: Exception) {
+                Log.e("DownloadPDF", "Error saat download: ${e.message}", e)
+                Toast.makeText(this@SetoranActivity, "Terjadi kesalahan jaringan.", Toast.LENGTH_LONG).show()
             }
         }
     }
 
+    // ❌ PERUBAHAN 3: Fungsi lama untuk membuat PDF di HP sudah tidak diperlukan dan dihapus
+    // private fun downloadLaporan(...) { ... }
+    // private fun generateSimplePdfReport(...) { ... }
+
+
+    // --- Fungsi lainnya tetap ada dan tidak berubah ---
+
     private fun fetchStatusHafalan(token: String?) {
+        // ... (kode fungsi ini tetap sama seperti sebelumnya)
         if (token == null) {
             Toast.makeText(this, "Sesi tidak valid, silakan login ulang", Toast.LENGTH_LONG).show()
             return
@@ -78,25 +121,22 @@ class SetoranActivity : AppCompatActivity() {
                 val response = RetrofitClient.apiService.getStatusHafalan("Bearer $token")
 
                 if (response.isSuccessful) {
-                    // ✅ PERBAIKAN: Mengambil list dari .data.setoran.detail
                     val suratStatusList = response.body()?.data?.setoran?.detail
 
                     if (suratStatusList != null) {
-
-                        // ✅ PERBAIKAN: Mapping menggunakan field yang benar dari SuratStatus baru
                         currentSetoranList = suratStatusList.map { surat ->
                             DetailItemSetoran(
-                                id = surat.id ?: "", // Menggunakan id asli dari server
+                                id = surat.id ?: "",
                                 nama = surat.nama ?: "Tanpa Nama",
-                                label = surat.label ?: "", // Menggunakan label asli dari server
+                                label = surat.label ?: "",
                                 sudahSetor = surat.sudahSetor,
                                 infoSetoran = null
                             )
                         }
-
                         updateRecyclerView(currentSetoranList)
                         updateProgress()
-                        Toast.makeText(this@SetoranActivity, "Data berhasil dimuat!", Toast.LENGTH_SHORT).show()
+                        // Menghapus toast sukses agar tidak terlalu ramai
+                        // Toast.makeText(this@SetoranActivity, "Data berhasil dimuat!", Toast.LENGTH_SHORT).show()
                     } else {
                         Toast.makeText(this@SetoranActivity, "List 'detail' tidak ditemukan di respons.", Toast.LENGTH_SHORT).show()
                     }
@@ -117,74 +157,6 @@ class SetoranActivity : AppCompatActivity() {
         val total = currentSetoranList.size
         val percentage = if (total > 0) (sudahSetor * 100) / total else 0
         textViewProgress.text = "Progress Hafalan: $sudahSetor/$total Surat ($percentage%)"
-    }
-
-    private fun downloadLaporan(nim: String, nama: String) {
-        Toast.makeText(this, "📄 Mempersiapkan laporan...", Toast.LENGTH_SHORT).show()
-        lifecycleScope.launch {
-            try {
-                val pdfBytes = withContext(Dispatchers.IO) { generateSimplePdfReport(nim, nama, currentSetoranList) }
-                withContext(Dispatchers.IO) {
-                    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-                    val fileName = "laporan_setoran_${nim}_${timestamp}.pdf"
-                    savePdfToDownloads(this@SetoranActivity, pdfBytes, fileName)
-                }
-                Log.d("DownloadLaporan", "Laporan berhasil dibuat dan disimpan.")
-            } catch (e: Exception) {
-                Log.e("DownloadLaporan", "Gagal membuat atau menyimpan laporan", e)
-                Toast.makeText(this@SetoranActivity, "Terjadi kesalahan: ${e.message}", Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
-    private fun generateSimplePdfReport(nim: String, nama: String, data: List<DetailItemSetoran>): ByteArray {
-        val document = PdfDocument()
-        val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
-        val page = document.startPage(pageInfo)
-        var canvas = page.canvas
-        val paint = Paint()
-        var yPosition = 40f
-
-        paint.textSize = 18f
-        paint.isFakeBoldText = true
-        canvas.drawText("Laporan Setoran Hafalan", 40f, yPosition, paint)
-        yPosition += 40f
-
-        paint.textSize = 12f
-        paint.isFakeBoldText = false
-        canvas.drawText("Nama: $nama", 40f, yPosition, paint)
-        yPosition += 20f
-        canvas.drawText("NIM: $nim", 40f, yPosition, paint)
-        yPosition += 40f
-
-        paint.isFakeBoldText = true
-        canvas.drawText("No.", 40f, yPosition, paint)
-        canvas.drawText("Nama Surat", 80f, yPosition, paint)
-        canvas.drawText("Status", 450f, yPosition, paint)
-        yPosition += 25f
-        canvas.drawLine(40f, yPosition - 15, 555f, yPosition - 15, paint)
-
-        paint.isFakeBoldText = false
-        data.forEachIndexed { index, item ->
-            canvas.drawText("${index + 1}.", 40f, yPosition, paint)
-            canvas.drawText(item.nama ?: "N/A", 80f, yPosition, paint)
-            val status = if (item.sudahSetor) "✅ Sudah Setor" else "⏳ Belum Setor"
-            canvas.drawText(status, 450f, yPosition, paint)
-            yPosition += 20f
-
-            if (yPosition > 800) {
-                document.finishPage(page)
-                val newPage = document.startPage(pageInfo)
-                canvas = newPage.canvas
-                yPosition = 40f
-            }
-        }
-
-        document.finishPage(page)
-        val outputStream = ByteArrayOutputStream()
-        document.writeTo(outputStream)
-        document.close()
-        return outputStream.toByteArray()
     }
 
     private fun savePdfToDownloads(context: Context, pdfBytes: ByteArray, fileName: String) {
@@ -234,6 +206,7 @@ class SetoranActivity : AppCompatActivity() {
     }
 }
 
+// ... Kode untuk DetailSetoranAdapter tetap sama ...
 class DetailSetoranAdapter(private var setoranList: List<DetailItemSetoran>) :
     RecyclerView.Adapter<DetailSetoranAdapter.DetailSetoranViewHolder>() {
 

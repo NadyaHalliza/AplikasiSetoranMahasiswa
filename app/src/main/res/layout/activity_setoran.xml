@@ -28,7 +28,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Al-Fatihah + Juz 30 (Juz 'Amma)"
+            android:text="Juz 30 (Juz 'Amma)"
             android:textSize="14sp"
             android:textColor="@color/green_500"
             android:layout_gravity="center_horizontal"
