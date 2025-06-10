@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.content.Intent
 import com.example.aplikasisetoranmahasiswa.ui.main.MainActivity
-import com.example.setoranhafalanapp.databinding.ActivityLoginBinding
+import com.example.aplikasisetoranmahasiswa.databinding.ActivityLoginBinding
 
 class LoginActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLoginBinding

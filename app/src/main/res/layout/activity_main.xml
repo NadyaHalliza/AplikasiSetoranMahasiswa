@@ -8,7 +8,7 @@
     android:orientation="vertical"
     android:padding="24dp"
     android:background="@color/white"
-    tools:context=".ui.main.MainActivity">
+    tools:context="com.example.aplikasisetoranmahasiswa.ui.main.MainActivity">
 
     <!-- Header Section -->
     <LinearLayout

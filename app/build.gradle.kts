@@ -5,17 +5,18 @@ plugins {
 }
 
 android {
-    namespace = "com.example.setoranhafalanapp"
+    namespace = "com.example.aplikasisetoranmahasiswa"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.setoranhafalanapp"
+        applicationId = "com.example.aplikasisetoranmahasiswa"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
     }
 
     buildTypes {

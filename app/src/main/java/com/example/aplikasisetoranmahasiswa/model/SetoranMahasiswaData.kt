@@ -59,14 +59,6 @@ data class RingkasanSetoran(
     @SerializedName("persentase_progres_setor") val persentaseProgresSetor: Double
 )
 
-data class DetailItemSetoran(
-    val id: String,
-    val nama: String,
-    val label: String,
-    @SerializedName("sudah_setor") val sudahSetor: Boolean,
-    @SerializedName("info_setoran") val infoSetoran: InfoSetoran? // Bisa null jika belum setor
-)
-
 data class InfoSetoran(
     val id: String,
     val tgl_setoran: String,

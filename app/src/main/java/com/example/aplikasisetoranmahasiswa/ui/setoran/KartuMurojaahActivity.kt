@@ -8,7 +8,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
-import com.example.setoranhafalanapp.R
+import com.example.aplikasisetoranmahasiswa.R
 import com.example.aplikasisetoranmahasiswa.network.RetrofitClient
 import kotlinx.coroutines.launch
 import okio.buffer

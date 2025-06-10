@@ -4,7 +4,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.content.Intent // Untuk navigasi
 import com.example.aplikasisetoranmahasiswa.ui.setoran.SetoranActivity // Import SetoranActivity
-import com.example.setoranhafalanapp.databinding.ActivityMainBinding
+import com.example.aplikasisetoranmahasiswa.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding

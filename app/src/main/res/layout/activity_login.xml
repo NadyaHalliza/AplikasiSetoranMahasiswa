@@ -9,7 +9,7 @@
     android:padding="24dp"
     android:background="@color/white"
     android:gravity="center"
-    tools:context=".ui.auth.LoginActivity">
+    tools:context="com.example.aplikasisetoranmahasiswa.ui.auth.LoginActivity">
 
     <!-- Header Section -->
     <LinearLayout
