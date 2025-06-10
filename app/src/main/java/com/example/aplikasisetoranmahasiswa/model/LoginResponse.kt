@@ -2,7 +2,6 @@ package com.example.aplikasisetoranmahasiswa.model
 
 import com.google.gson.annotations.SerializedName
 
-// Data class untuk response dari endpoint login Keycloak
 data class LoginResponse(
     @SerializedName("access_token") val accessToken: String,
     @SerializedName("refresh_token") val refreshToken: String,

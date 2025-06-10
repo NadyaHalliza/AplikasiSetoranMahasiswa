@@ -2,7 +2,7 @@ package com.example.aplikasisetoranmahasiswa.model
 
 import com.google.gson.annotations.SerializedName
 
-data class SetoranData(
+data class DataContainer(
 
-    @SerializedName("detail") val detail: List<SuratStatus>?
+    @SerializedName("setoran") val setoran: SetoranData?
 )

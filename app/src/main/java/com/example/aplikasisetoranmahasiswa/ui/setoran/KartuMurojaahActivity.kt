@@ -18,8 +18,9 @@ import java.io.File
 
 class KartuMurojaahActivity : AppCompatActivity() {
 
-    private val apiKey = "your_api_key_here"
-    private val authToken = "Bearer your_access_token_here"
+    private val authToken: String
+        get() = "Bearer " + getSharedPreferences("auth", MODE_PRIVATE)
+            .getString("access_token", "")!!  // Pastikan kamu simpan token saat login
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,7 +32,7 @@ class KartuMurojaahActivity : AppCompatActivity() {
     private fun downloadAndOpenKartuMurojaah() {
         lifecycleScope.launch {
             try {
-                val response = RetrofitClient.apiService.downloadKartuMurojaah(apiKey, authToken)
+                val response = RetrofitClient.apiService.downloadKartuMurojaah(authToken)
                 if (response.isSuccessful) {
                     response.body()?.let { body ->
                         val pdfFile = savePdfToFile(body)
@@ -57,7 +58,7 @@ class KartuMurojaahActivity : AppCompatActivity() {
     private fun openPdfFile(file: File) {
         val uri: Uri = FileProvider.getUriForFile(
             this,
-            "$packageName.provider", // Pastikan sama dengan `android:authorities` di manifest
+            "$packageName.provider",  // Pastikan authority di AndroidManifest sesuai
             file
         )
 

@@ -21,7 +21,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.aplikasisetoranmahasiswa.R
 import com.example.aplikasisetoranmahasiswa.model.DetailItemSetoran
-import com.example.aplikasisetoranmahasiswa.ui.setoran.DetailSetoranAdapter
+import com.example.aplikasisetoranmahasiswa.model.SuratStatus
+import com.example.aplikasisetoranmahasiswa.network.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -49,19 +50,16 @@ class SetoranActivity : AppCompatActivity() {
 
         val sharedPref = getSharedPreferences("AppPrefs", MODE_PRIVATE)
         val authToken = sharedPref.getString("access_token", null)
-        val nimMahasiswa = sharedPref.getString("user_nim", null)
-        val namaMahasiswa = sharedPref.getString("user_name", "Mahasiswa")
+        val nimMahasiswa = sharedPref.getString("user_nim", "NIM Tidak Ada")
+        val namaMahasiswa = sharedPref.getString("user_name", "Nama Tidak Ada")
 
         setupRecyclerView()
 
-        if (authToken != null && nimMahasiswa != null) {
-            loadMockSetoranData(nimMahasiswa)
-        } else {
-            Toast.makeText(this, "Anda belum login atau NIM tidak tersedia", Toast.LENGTH_SHORT).show()
-        }
+        fetchStatusHafalan(authToken)
 
         buttonDownloadLaporan.setOnClickListener {
             if (currentSetoranList.isNotEmpty()) {
+                // SESUDAH
                 downloadLaporan(nimMahasiswa ?: "0000", namaMahasiswa ?: "Mahasiswa")
             } else {
                 Toast.makeText(this, "Data setoran belum dimuat.", Toast.LENGTH_SHORT).show()
@@ -69,23 +67,56 @@ class SetoranActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadMockSetoranData(nim: String) {
-        val mockData = listOf(
-            DetailItemSetoran(id = "1", nama = "Al-Fatihah", label = "Surat Pembuka", sudahSetor = true, infoSetoran = null),
-            DetailItemSetoran(id = "78", nama = "An-Naba'", label = "Juz 30", sudahSetor = true, infoSetoran = null),
-            DetailItemSetoran(id = "81", nama = "At-Takwir", label = "Juz 30", sudahSetor = true, infoSetoran = null),
-            DetailItemSetoran(id = "82", nama = "Al-Infitar", label = "Juz 30", sudahSetor = true, infoSetoran = null),
-            DetailItemSetoran(id = "83", nama = "Al-Mutaffifin", label = "Juz 30", sudahSetor = false, infoSetoran = null),
-            DetailItemSetoran(id = "84", nama = "Al-Insyiqaq", label = "Juz 30", sudahSetor = false, infoSetoran = null)
-        )
-        currentSetoranList = mockData
-        updateRecyclerView(currentSetoranList)
+    private fun fetchStatusHafalan(token: String?) {
+        if (token == null) {
+            Toast.makeText(this, "Sesi tidak valid, silakan login ulang", Toast.LENGTH_LONG).show()
+            return
+        }
 
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.apiService.getStatusHafalan("Bearer $token")
+
+                if (response.isSuccessful) {
+                    // ✅ PERBAIKAN: Mengambil list dari .data.setoran.detail
+                    val suratStatusList = response.body()?.data?.setoran?.detail
+
+                    if (suratStatusList != null) {
+
+                        // ✅ PERBAIKAN: Mapping menggunakan field yang benar dari SuratStatus baru
+                        currentSetoranList = suratStatusList.map { surat ->
+                            DetailItemSetoran(
+                                id = surat.id ?: "", // Menggunakan id asli dari server
+                                nama = surat.nama ?: "Tanpa Nama",
+                                label = surat.label ?: "", // Menggunakan label asli dari server
+                                sudahSetor = surat.sudahSetor,
+                                infoSetoran = null
+                            )
+                        }
+
+                        updateRecyclerView(currentSetoranList)
+                        updateProgress()
+                        Toast.makeText(this@SetoranActivity, "Data berhasil dimuat!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this@SetoranActivity, "List 'detail' tidak ditemukan di respons.", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    Log.e("SetoranActivity", "Gagal mengambil data: $errorBody")
+                    Toast.makeText(this@SetoranActivity, "Gagal mengambil data dari server.", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Log.e("SetoranActivity", "Error: ${e.message}", e)
+                Toast.makeText(this@SetoranActivity, "Terjadi kesalahan: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun updateProgress() {
         val sudahSetor = currentSetoranList.count { it.sudahSetor }
         val total = currentSetoranList.size
         val percentage = if (total > 0) (sudahSetor * 100) / total else 0
-        textViewProgress.text = "Progress Hafalan: $sudahSetor/$total Surat ($percentage%) 📊"
-        Toast.makeText(this, "✅ Data setoran berhasil dimuat!", Toast.LENGTH_LONG).show()
+        textViewProgress.text = "Progress Hafalan: $sudahSetor/$total Surat ($percentage%)"
     }
 
     private fun downloadLaporan(nim: String, nama: String) {
