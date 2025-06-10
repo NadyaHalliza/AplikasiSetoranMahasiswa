@@ -30,12 +30,13 @@ object RetrofitClient {
             .create(ApiService::class.java)
     }
 
-    val kcAuthService: ApiService by lazy {
+    val kcAuthService: AuthService by lazy {
         Retrofit.Builder()
-            .baseUrl(BASE_URL_KC)
+            .baseUrl("https://id.tif.uin-suska.ac.id/")
             .addConverterFactory(GsonConverterFactory.create())
             .client(client)
             .build()
-            .create(ApiService::class.java)
+            .create(AuthService::class.java)
+
     }
 }

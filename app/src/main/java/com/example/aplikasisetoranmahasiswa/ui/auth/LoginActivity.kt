@@ -1,17 +1,17 @@
 package com.example.aplikasisetoranmahasiswa.ui.auth
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
+import com.example.aplikasisetoranmahasiswa.databinding.ActivityLoginBinding
 import com.example.aplikasisetoranmahasiswa.network.RetrofitClient
+import com.example.aplikasisetoranmahasiswa.ui.main.MainActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import android.content.Intent
-import com.example.aplikasisetoranmahasiswa.ui.main.MainActivity
-import com.example.setoranhafalanapp.databinding.ActivityLoginBinding
 
 class LoginActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLoginBinding
@@ -51,7 +51,6 @@ class LoginActivity : AppCompatActivity() {
                             val userInfoResponse =
                                 RetrofitClient.kcAuthService.getUserInfo("Bearer ${loginResponse.accessToken}")
                             val userInfo = userInfoResponse.body()
-                            val nimFromToken = userInfo?.preferredUsername ?: username
 
                             // Pindah ke Main thread untuk UI operations
                             withContext(Dispatchers.Main) {
@@ -60,11 +59,18 @@ class LoginActivity : AppCompatActivity() {
                                 with(sharedPref.edit()) {
                                     putString("access_token", loginResponse.accessToken)
                                     putString("refresh_token", loginResponse.refreshToken)
-                                    putString("user_nim", nimFromToken)
+
+                                    // Gunakan 'let' untuk keamanan jika userInfo bisa null
+                                    userInfo?.let { info ->
+                                        putString("user_nim", info.preferredUsername)
+                                        // ✅ PERUBAHAN UTAMA: Menyimpan nama user
+                                        putString("user_name", info.name)
+                                    }
+
                                     apply()
                                 }
 
-                                Log.d("LoginActivity", "NIM dari token: $nimFromToken")
+                                Log.d("LoginActivity", "Login sukses. NIM: ${userInfo?.preferredUsername}, Nama: ${userInfo?.name}")
 
                                 Toast.makeText(
                                     this@LoginActivity,
@@ -113,7 +119,6 @@ class LoginActivity : AppCompatActivity() {
                     }
                 }
             }
-
         }
     }
 }

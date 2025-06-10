@@ -7,16 +7,14 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
-    tools:context=".ui.setoran.SetoranActivity">
+    tools:context="com.example.aplikasisetoranmahasiswa.ui.setoran.SetoranActivity">
 
-    <!-- Header Section -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_marginBottom="16dp">
 
-        <!-- Judul Utama -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -27,7 +25,6 @@
             android:layout_gravity="center_horizontal"
             android:layout_marginBottom="4dp"/>
 
-        <!-- Subtitle -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -37,7 +34,6 @@
             android:layout_gravity="center_horizontal"
             android:layout_marginBottom="12dp"/>
 
-        <!-- Progress Info -->
         <TextView
             android:id="@+id/textViewProgress"
             android:layout_width="wrap_content"
@@ -50,26 +46,12 @@
 
     </LinearLayout>
 
-    <!-- RecyclerView untuk Daftar Setoran -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewSetoran"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        tools:listitem="@layout/item_setoran" />
+        android:layout_weight="1"/>
 
-    <!-- TextView Baru: SIMPAN SETORAN -->
-    <TextView
-        android:id="@+id/tvSimpanSetoran"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="SIMPAN SETORAN"
-        android:textSize="18sp"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"/>
-
-    <!-- Tombol Aksi -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
